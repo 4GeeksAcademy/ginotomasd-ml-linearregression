@@ -1,13 +1,10 @@
-from utils import db_connect
-engine = db_connect()
-
-# your code here
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import StandardScaler
 
 # Loading the dataset directly from the URL
 url = "https://raw.githubusercontent.com/4GeeksAcademy/linear-regression-project-tutorial/main/medical_insurance_cost.csv"
@@ -49,7 +46,6 @@ plt.show()
 
 # Observation:
 # - 'charges' is right-skewed (not normally distributed).
-# - We might consider log-transforming it for modeling (optional).
 
 # Boxplots to detect outliers in numeric variables
 num_vars = ['age', 'bmi', 'children', 'charges']
@@ -90,24 +86,32 @@ print(df_encoded.head())
 X = df_encoded.drop('charges', axis=1)
 y = df_encoded['charges']
 
-# Train-test split (80% train, 20% test)
+# Splitting into training and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Creating and training a linear regression model
+# Scaling the features using StandardScaler
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Observation:
+# - Feature scaling helps linear models perform better and makes coefficients more comparable.
+
+# Creating and training a linear regression model on scaled data
 model = LinearRegression()
-model.fit(X_train, y_train)
+model.fit(X_train_scaled, y_train)
 
 # Making predictions
-y_pred = model.predict(X_test)
+y_pred = model.predict(X_test_scaled)
 
-# Model evaluation
-print("\nModel evaluation:")
+# Evaluating the model
+print("\nModel evaluation with scaled features:")
 print("MSE:", mean_squared_error(y_test, y_pred))
 print("R2 Score:", r2_score(y_test, y_pred))
 
 # Observation:
-# - R² will tell us how well our model explains the variance.
-# - If it’s below 0.7, we might consider feature engineering or using more complex models.
+# - R² shows how well the model explains variance.
+# - If still low (< 0.75), we might try Ridge, Lasso, or tree-based models.
 
 # Visualizing predictions vs actual values
 plt.scatter(y_test, y_pred)
@@ -118,5 +122,5 @@ plt.plot([y.min(), y.max()], [y.min(), y.max()], 'k--')  # ideal fit line
 plt.show()
 
 # Observation:
-# - If the points cluster close to the diagonal, the model is performing well.
-# - Large spread means our model struggles with certain predictions (likely smokers vs non-smokers).
+# - Ideally, points should follow the diagonal.
+# - If there’s too much spread, we may need more complex models or better features.
